@@ -1,0 +1,59 @@
+services:
+  backend:
+    build:
+      context: ./cardano-payroll
+      dockerfile: Dockerfile
+    container_name: cardano-payroll-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/cardano_payroll
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SCRIPT_SERVICE_URL=http://scripts:4000
+    networks:
+      - cardano-net
+
+  db:
+    image: postgres:16
+    container_name: cardano-payroll-db
+    environment:
+      - POSTGRES_DB=cardano_payroll
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+    networks:
+      - cardano-net
+
+  frontend:
+    build:
+      context: ./cardano-payroll-frontend
+      dockerfile: Dockerfile
+    container_name: cardano-payroll-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # Update this if your frontend uses a different env var for the backend URL
+      - NEXT_PUBLIC_API_BASE_URL=http://backend:8080
+    depends_on:
+      - backend
+    networks:
+      - cardano-net
+
+  scripts:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile
+    container_name: cardano-payroll-scripts
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./scripts:/usr/src/app
+    networks:
+      - cardano-net
+
+networks:
+  cardano-net:
+    driver: bridge
+
+

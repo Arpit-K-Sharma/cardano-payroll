@@ -1,0 +1,8 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "lucid-cardano": "^0.10.11"
+  }
+}
