@@ -5,11 +5,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 
 @Component
@@ -21,51 +25,72 @@ public class CardanoTxUtil {
     @Value("${COMPANY_SKEY}")
     private String companySkey;
 
-    @Value("${SCRIPT_SERVICE_URL}")
-    private String scriptServiceUrl;
+    @Value("${SCRIPT_PATH}")
+    private String scriptPath;
 
     @Value("${BLOCKFROST_BASE_URL:https://cardano-preprod.blockfrost.io/api/v0}")
     private String blockfrostBaseUrl;
 
     public String sendADA(String employeeWalletAddress, Double amountADA) throws Exception {
-        // Call the external scripts service over HTTP instead of executing a local Node process
-        String requestBody = String.format(
-                "{\"apiKey\":\"%s\",\"privateKey\":\"%s\",\"toAddress\":\"%s\",\"amount\":%s}",
-                escapeJson(blockfrostApiKey),
-                escapeJson(companySkey),
-                escapeJson(employeeWalletAddress),
+        File scriptFile = resolveScriptFile();
+
+        ProcessBuilder pb = new ProcessBuilder(
+                "node",
+                scriptFile.getAbsolutePath(),
+                blockfrostApiKey,
+                companySkey,
+                employeeWalletAddress,
                 amountADA.toString()
         );
 
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(scriptServiceUrl + "/send-ada"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                .build();
+        // Ensure Node resolves dependencies relative to the script directory
+        pb.directory(scriptFile.getParentFile());
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
 
-        if (response.statusCode() != 200) {
-            throw new IllegalStateException("Script service error: " + response.body());
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        String txHash = null;
+
+        while ((line = reader.readLine()) != null) {
+            System.out.println("NODE: " + line);
+
+            if (line.startsWith("TX_HASH=")) {
+                txHash = line.replace("TX_HASH=", "").trim();
+            }
         }
 
-        String body = response.body();
-        String txHash = extractTxHashFromJson(body);
+        int exitCode = process.waitFor();
 
-        if (txHash == null || txHash.isEmpty()) {
-            throw new IllegalStateException("Transaction not submitted — no hash returned from script service");
-        }
+        if (exitCode != 0)
+            throw new Exception("Node script failed");
+
+        if (txHash == null)
+            throw new Exception("Transaction not submitted — no hash returned");
 
         awaitConfirmation(txHash);
 
         return txHash;
     }
 
+    private File resolveScriptFile() throws Exception {
+        Path path = Paths.get(scriptPath);
+        if (!path.isAbsolute()) {
+            path = Paths.get("").toAbsolutePath().resolve(path).normalize();
+        }
+
+        if (!Files.exists(path)) {
+            throw new IllegalStateException("send-ada script not found at " + path);
+        }
+
+        return path.toFile();
+    }
+
     private void awaitConfirmation(String txHash) throws Exception {
         HttpClient client = HttpClient.newHttpClient();
         int attempts = 0;
-        while (attempts < 15) { // roughly 60 seconds
+        while (attempts < 12) { // roughly 60 seconds
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(String.format("%s/txs/%s", blockfrostBaseUrl, txHash)))
                     .header("project_id", blockfrostApiKey)
@@ -77,28 +102,10 @@ public class CardanoTxUtil {
                 return;
             }
 
-            Thread.sleep(6000);
+            Thread.sleep(5000);
             attempts++;
         }
 
         throw new IllegalStateException("Transaction " + txHash + " was not confirmed in time");
-    }
-
-    private String escapeJson(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
-
-    private String extractTxHashFromJson(String json) {
-        // Very small, dependency-free parser for { "txHash": "..." }
-        String key = "\"txHash\"";
-        int idx = json.indexOf(key);
-        if (idx == -1) return null;
-        int colon = json.indexOf(':', idx + key.length());
-        if (colon == -1) return null;
-        int firstQuote = json.indexOf('"', colon);
-        if (firstQuote == -1) return null;
-        int secondQuote = json.indexOf('"', firstQuote + 1);
-        if (secondQuote == -1) return null;
-        return json.substring(firstQuote + 1, secondQuote);
     }
 }
