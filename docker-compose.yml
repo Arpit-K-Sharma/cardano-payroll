@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: cardano-payroll-db
+    environment:
+      POSTGRES_DB: cardano_payroll
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - payroll-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Backend + Node.js Scripts
+  backend:
+    build:
+      context: .  # Root directory to access scripts/
+      dockerfile: ./cardano-payroll/Dockerfile
+    container_name: cardano-payroll-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cardano_payroll
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      BLOCKFROST_PROJECT_ID: ${BLOCKFROST_PROJECT_ID}
+      COMPANY_SKEY: ${COMPANY_SKEY}
+      COMPANY_WALLET_ADDRESS: ${COMPANY_WALLET_ADDRESS}
+      BATCH_SCRIPT_PATH: /app/scripts/send-ada.js
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - payroll-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./cardano-payroll-frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+    container_name: cardano-payroll-frontend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - payroll-network
+
+volumes:
+  postgres_data:
+
+networks:
+  payroll-network:
+    driver: bridge

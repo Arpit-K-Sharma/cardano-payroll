@@ -3,16 +3,16 @@ FROM maven:3.9-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
-# Copy Maven files
-COPY pom.xml .
-COPY .mvn .mvn
-COPY mvnw .
+# Copy Maven files from cardano-payroll
+COPY cardano-payroll/pom.xml .
+COPY cardano-payroll/.mvn .mvn
+COPY cardano-payroll/mvnw .
 
 # Download dependencies
 RUN ./mvnw dependency:go-offline -B
 
 # Copy source
-COPY src ./src
+COPY cardano-payroll/src ./src
 
 # Build
 RUN ./mvnw clean package -DskipTests
@@ -28,7 +28,7 @@ RUN apk add --no-cache nodejs npm
 # Copy JAR
 COPY --from=build /app/target/*.jar app.jar
 
-# Copy scripts
+# Copy scripts from ROOT (not cardano-payroll/scripts)
 COPY scripts ./scripts
 
 # Install Node dependencies
