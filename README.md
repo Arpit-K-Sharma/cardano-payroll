@@ -546,5 +546,3 @@ For enterprise support, custom development, or consulting services, please conta
 ---
 
 **Built with ❤️ for the Cardano ecosystem**
-
-For more information, visit our [documentation](docs/) or check out our [API reference](docs/api-reference.md).
