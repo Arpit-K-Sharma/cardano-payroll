@@ -7,7 +7,9 @@ import org.example.cardanopayroll.utils.CardanoTxUtil;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PayrollService {
@@ -30,27 +32,54 @@ public class PayrollService {
 
     public void processMonthlyPayroll() {
         List<Employee> employees = getAllEmployees();
+
+        // Prepare batch transaction data
+        Map<String, PayrollTransaction> txMap = new HashMap<>();
+        StringBuilder paymentData = new StringBuilder();
         for (Employee emp : employees) {
             PayrollTransaction tx = new PayrollTransaction();
             tx.setEmployee(emp);
             tx.setWalletAddress(emp.getWalletAddress());
             tx.setAmount(emp.getSalary());
             tx.setTimestamp(LocalDateTime.now());
+            tx.setStatus("PENDING");
 
-            System.out.println("Sending " + emp.getSalary() + " ADA to " + emp.getWalletAddress());
-            try {
-                String txHash = cardanoTxUtil.sendADA(emp.getWalletAddress(), emp.getSalary());
-                System.out.println("Transaction successful! TX Hash: " + txHash);
+            txMap.put(emp.getWalletAddress(), tx);
+
+            if (!paymentData.isEmpty()) {
+                paymentData.append(";");
+            }
+            paymentData.append(emp.getWalletAddress())
+                    .append(",")
+                    .append(emp.getSalary());
+
+            System.out.println("Queued: " + emp.getSalary() + " ADA to " + emp.getWalletAddress());
+        }
+
+        System.out.println("Processing batch payment for " + employees.size() + " employees...");
+
+        try {
+            // Send all payments in one transaction
+            String txHash = cardanoTxUtil.sendBatchADA(paymentData.toString());
+            System.out.println("Batch transaction successful! TX Hash: " + txHash);
+
+            // Update all transactions with success status
+            for (PayrollTransaction tx : txMap.values()) {
                 tx.setTxHash(txHash);
                 tx.setStatus("SUCCESS");
-            } catch (Exception e) {
+                transactionRepository.save(tx);
+            }
+        }catch (Exception e) {
+            System.out.println("Batch transaction failed: " + e.getMessage());
+
+            // Mark all as failed
+            for (PayrollTransaction tx : txMap.values()) {
                 tx.setTxHash("FAILED");
                 tx.setStatus("FAILED");
-                System.out.println("Transaction failed for " + emp.getFullName() + ": " + e.getMessage());
+                transactionRepository.save(tx);
             }
-            transactionRepository.save(tx);
+        }
         }
     }
 
 
-}

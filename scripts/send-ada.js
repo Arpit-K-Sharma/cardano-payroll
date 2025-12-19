@@ -3,10 +3,9 @@ import { Lucid, Blockfrost } from "lucid-cardano";
 // Arguments from Java
 const API_KEY = process.argv[2];
 const PRIVATE_KEY = process.argv[3];
-const TO_ADDRESS = process.argv[4];
-const AMOUNT = process.argv[5];
+const PAYMENT_DATA = process.argv[4]; // Format: "addr1,10;addr2,20;addr3,15"
 
-if (!API_KEY || !PRIVATE_KEY || !TO_ADDRESS || !AMOUNT) {
+if (!API_KEY || !PRIVATE_KEY || !PAYMENT_DATA) {
   console.error("Missing arguments");
   process.exit(1);
 }
@@ -18,7 +17,7 @@ async function main() {
   let attempt = 1;
   while (attempt <= MAX_ATTEMPTS) {
     try {
-      const txHash = await submitPayment();
+      const txHash = await submitBatchPayment();
       console.log("TX_HASH=" + txHash);
       return;
     } catch (err) {
@@ -48,7 +47,7 @@ function isRetryable(message) {
   );
 }
 
-async function submitPayment() {
+async function submitBatchPayment() {
   const lucid = await Lucid.new(
     new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", API_KEY),
     "Preprod"
@@ -59,14 +58,27 @@ async function submitPayment() {
   const companyAddr = await lucid.wallet.address();
   console.log("COMPANY_ADDRESS=" + companyAddr);
 
-  const lovelace = BigInt(Math.floor(parseFloat(AMOUNT) * 1_000_000));
+  // Parse payment data: "addr1,10;addr2,20;addr3,15"
+  const payments = PAYMENT_DATA.split(";").map(entry => {
+    const [address, amount] = entry.split(",");
+    return {
+      address: address.trim(),
+      lovelace: BigInt(Math.floor(parseFloat(amount) * 1_000_000))
+    };
+  });
 
-  const tx = await lucid
-    .newTx()
-    .payToAddress(TO_ADDRESS, { lovelace })
-    .complete();
+  console.log(`Processing ${payments.length} payments in single transaction`);
 
-  const signed = await tx.sign().complete();
+  // Build transaction with multiple outputs
+  let tx = lucid.newTx();
+  
+  for (const payment of payments) {
+    tx = tx.payToAddress(payment.address, { lovelace: payment.lovelace });
+    console.log(`Added output: ${payment.lovelace / 1_000_000n} ADA to ${payment.address}`);
+  }
+
+  const completedTx = await tx.complete();
+  const signed = await completedTx.sign().complete();
   const txHash = await signed.submit();
 
   console.log("WAITING_FOR_CONFIRMATION=" + txHash);
