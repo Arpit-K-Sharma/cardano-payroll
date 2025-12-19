@@ -1,8 +1,7 @@
-
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: 'standalone', // ✅ Required for Docker
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000']
@@ -11,10 +10,8 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
   },
-  // Enable production optimizations
   poweredByHeader: false,
   compress: true,
-  // Security headers
   async headers() {
     return [
       {
