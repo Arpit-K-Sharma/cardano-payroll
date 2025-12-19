@@ -43,12 +43,8 @@ services:
         condition: service_healthy
     networks:
       - payroll-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
+
+
 
   # Next.js Frontend
   frontend:
@@ -62,9 +58,11 @@ services:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
     ports:
       - "3000:3000"
+
+
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_started
     networks:
       - payroll-network
 
