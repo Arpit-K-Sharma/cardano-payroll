@@ -7,6 +7,7 @@ WORKDIR /app
 COPY cardano-payroll/pom.xml .
 COPY cardano-payroll/.mvn .mvn
 COPY cardano-payroll/mvnw .
+RUN chmod +x ./mvnw
 
 # Download dependencies
 RUN ./mvnw dependency:go-offline -B

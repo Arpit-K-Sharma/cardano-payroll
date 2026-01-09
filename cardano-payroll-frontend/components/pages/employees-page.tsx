@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { API_BASE_URL } from "../../lib/config"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { EmployeeForm } from "@/components/forms/employee-form"
@@ -21,7 +22,7 @@ export function EmployeesPage() {
   const fetchEmployees = async () => {
     try {
       setLoading(true)
-      const response = await fetch("http://localhost:8080/api/getAllEmployees")
+      const response = await fetch(`${API_BASE_URL}/api/getAllEmployees`)
       if (response.ok) {
         const data = await response.json()
         setEmployees(data)
@@ -36,7 +37,7 @@ export function EmployeesPage() {
   const handleSaveEmployee = async (formData: any) => {
     try {
       if (editingEmployee) {
-        const response = await fetch(`http://localhost:8080/api/updateEmployee/${editingEmployee.id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/updateEmployee/${editingEmployee.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
@@ -46,7 +47,7 @@ export function EmployeesPage() {
           fetchEmployees()
         }
       } else {
-        const response = await fetch("http://localhost:8080/api/createEmployee", {
+        const response = await fetch(`${API_BASE_URL}/api/createEmployee`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
@@ -67,7 +68,7 @@ export function EmployeesPage() {
       return
     }
     try {
-      const response = await fetch(`http://localhost:8080/api/deleteEmployee/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/deleteEmployee/${id}`, {
         method: "DELETE",
       })
       if (response.ok) {

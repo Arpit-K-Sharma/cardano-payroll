@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { API_BASE_URL } from "../../lib/config"
 import { Card } from "@/components/ui/card"
 import { Users, DollarSign, Wallet, TrendingUp } from "lucide-react"
 import { Employee, PayrollTransaction } from "@/lib/types"
@@ -21,9 +22,9 @@ export function DashboardPage() {
       const companyWalletAddress = "addr_test1vpyjcw5rrlgrpq7ry9c2z2frnsaxccd63nthac4ckenfpzc89shfw"
 
       const [employeesRes, transactionsRes, walletRes] = await Promise.all([
-        fetch("http://localhost:8080/api/getAllEmployees"),
-        fetch("http://localhost:8080/api/transactions"),
-        fetch(`http://localhost:8080/api/wallet/balance?address=${companyWalletAddress}`)
+        fetch(`${API_BASE_URL}/api/getAllEmployees`),
+        fetch(`${API_BASE_URL}/api/transactions`),
+        fetch(`${API_BASE_URL}/api/wallet/balance?address=${companyWalletAddress}`)
       ])
 
       if (employeesRes.ok) {

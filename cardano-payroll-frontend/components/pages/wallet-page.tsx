@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { API_BASE_URL } from "../../lib/config"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,10 +31,10 @@ export function WalletPage() {
 
     try {
       setLoading(true)
-      const response = await fetch(`http://localhost:8080/api/wallet/balance?address=${addressToCheck}`)
+      const response = await fetch(`${API_BASE_URL}/api/wallet/balance?address=${addressToCheck}`)
       const balance = await response.text()
 
-      const txResponse = await fetch(`http://localhost:8080/api/wallet/transactions?address=${addressToCheck}`)
+      const txResponse = await fetch(`${API_BASE_URL}/api/wallet/transactions?address=${addressToCheck}`)
       const transactions = await txResponse.text()
 
       setWalletInfo({

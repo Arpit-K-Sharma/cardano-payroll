@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { API_BASE_URL } from "../../lib/config"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PaymentTable } from "@/components/tables/payment-table"
@@ -20,7 +21,7 @@ export function PayrollPage() {
   const fetchTransactions = async () => {
     try {
       setLoading(true)
-      const response = await fetch("http://localhost:8080/api/transactions")
+      const response = await fetch(`${API_BASE_URL}/api/transactions`)
       if (response.ok) {
         const data = await response.json()
         setTransactions(data)
@@ -36,7 +37,7 @@ export function PayrollPage() {
     try {
       setProcessingPayroll(true)
       setRunStatus("Triggering payroll run...")
-      const response = await fetch("http://localhost:8080/api/run-payroll")
+      const response = await fetch(`${API_BASE_URL}/api/run-payroll`)
       const message = await response.text()
 
       if (!response.ok) {
