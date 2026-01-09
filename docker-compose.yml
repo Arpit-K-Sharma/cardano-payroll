@@ -52,10 +52,10 @@ services:
       context: ./cardano-payroll-frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: https://api.pay.sireto.dev
+        NEXT_PUBLIC_API_BASE_URL: https://api-pay.sireto.net
     container_name: cardano-payroll-frontend
     environment:
-      NEXT_PUBLIC_API_BASE_URL: https://api.pay.sireto.dev
+      NEXT_PUBLIC_API_BASE_URL: https://api-pay.sireto.net
     ports:
       - "3000:3000"
 

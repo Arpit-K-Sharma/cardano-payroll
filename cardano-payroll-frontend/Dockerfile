@@ -16,7 +16,7 @@ RUN npm ci --production=false
 COPY . .
 
 # Accept build argument for API URL
-ARG NEXT_PUBLIC_API_BASE_URL=https://api.pay.sireto.dev
+ARG NEXT_PUBLIC_API_BASE_URL=https://api-pay.sireto.net
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
 # Build the application
