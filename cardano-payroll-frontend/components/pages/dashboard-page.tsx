@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { API_BASE_URL as CONFIG_API_BASE_URL } from "../../lib/config"
 
 const DEPLOYED_BACKEND_URL = "http://172.31.9.61:8080"
-const API_BASE_URL = (!CONFIG_API_BASE_URL || CONFIG_API_BASE_URL.includes("localhost")) ? DEPLOYED_BACKEND_URL : CONFIG_API_BASE_URL;
+const API_BASE_URL =  DEPLOYED_BACKEND_URL;
 import { Card } from "@/components/ui/card"
 import { Users, DollarSign, Wallet, TrendingUp } from "lucide-react"
 import { Employee, PayrollTransaction } from "@/lib/types"
