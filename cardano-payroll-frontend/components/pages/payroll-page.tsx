@@ -1,7 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { API_BASE_URL } from "../../lib/config"
+import { API_BASE_URL as CONFIG_API_BASE_URL } from "../../lib/config"
+
+const DEPLOYED_BACKEND_URL = "http://172.31.9.61:8080"
+const API_BASE_URL = (!CONFIG_API_BASE_URL || CONFIG_API_BASE_URL.includes("localhost")) ? DEPLOYED_BACKEND_URL : CONFIG_API_BASE_URL;
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PaymentTable } from "@/components/tables/payment-table"
