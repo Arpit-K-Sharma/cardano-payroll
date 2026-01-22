@@ -89,8 +89,8 @@ export function WalletPage() {
       </Card>
 
       {walletInfo && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="p-6">
+        <div className="flex flex-col gap-8">
+          <Card className="p-6 mb-2 shadow-lg bg-gradient-to-br from-white via-blue-50 to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 border-0">
             <h3 className="text-lg font-semibold text-foreground mb-4">Wallet Balance</h3>
             <div className="space-y-4">
               <div>
@@ -108,11 +108,40 @@ export function WalletPage() {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 shadow-lg bg-gradient-to-br from-white via-green-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 border-0">
             <h3 className="text-lg font-semibold text-foreground mb-4">Recent Transactions</h3>
             <div className="space-y-2">
               {walletInfo.transactions && walletInfo.transactions.length > 0 ? (
-                <p className="text-sm text-muted-foreground font-mono break-all">{walletInfo.transactions[0]}</p>
+                (() => {
+                  let txs: any[] = [];
+                  try {
+                    txs = JSON.parse(walletInfo.transactions[0]);
+                  } catch {
+                    return <p className="text-sm text-muted-foreground font-mono break-all">{walletInfo.transactions[0]}</p>;
+                  }
+                  if (!Array.isArray(txs) || txs.length === 0) {
+                    return <p className="text-muted-foreground">No transactions found</p>;
+                  }
+                  return (
+                    <div className="flex flex-col gap-4">
+                      {txs.slice(0, 10).map((tx, idx) => (
+                        <div key={tx.tx_hash || idx} className="flex flex-col md:flex-row md:items-center gap-2 px-4 py-3 rounded-xl bg-white/80 dark:bg-gray-900/80 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-foreground">Tx Hash:</span>
+                              <span className="font-mono text-xs break-all">{tx.tx_hash}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                              <span>Block: <span className="font-mono">{tx.block_height}</span></span>
+                              <span>Index: <span className="font-mono">{tx.tx_index}</span></span>
+                              <span>Time: <span className="font-mono">{tx.block_time ? new Date(tx.block_time * 1000).toLocaleString() : 'N/A'}</span></span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()
               ) : (
                 <p className="text-muted-foreground">No transactions found</p>
               )}

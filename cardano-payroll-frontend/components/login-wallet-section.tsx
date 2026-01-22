@@ -11,7 +11,7 @@ export function LoginWalletSection() {
     <div className="p-4 border-t border-sidebar-border">
       <Button
         variant="outline"
-        className="w-full bg-transparent cursor-pointer"
+        className="w-full bg-transparent"
         size="sm"
         onClick={() => setOpen(true)}
       >
