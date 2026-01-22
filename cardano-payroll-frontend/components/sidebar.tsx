@@ -4,6 +4,9 @@ import type React from "react"
 
 import { Home, Users, DollarSign, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Dialog } from "@/components/ui/dialog"
+import { WalletConnect } from "@/components/wallet-connect"
+import { LoginWalletSection } from "@/components/login-wallet-section"
 
 interface SidebarProps {
   currentPage: "dashboard" | "employees" | "payroll" | "wallet"
@@ -52,11 +55,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         />
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border">
-        <Button variant="outline" className="w-full bg-transparent" size="sm">
-          Documentation
-        </Button>
-      </div>
+      <LoginWalletSection />
     </aside>
   )
 }
@@ -75,7 +74,7 @@ function NavItem({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+      className={`w-full flex items-center cursor-pointer gap-3 px-4 py-3 rounded-lg transition-colors ${
         active
           ? "bg-sidebar-primary text-sidebar-primary-foreground"
           : "text-sidebar-foreground hover:bg-sidebar-accent"

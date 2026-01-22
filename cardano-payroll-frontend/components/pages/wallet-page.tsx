@@ -99,7 +99,7 @@ export function WalletPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Current Balance</p>
-                <p className="text-3xl font-bold text-accent">
+                <p className="text-3xl font-bold text-foreground">
                   {walletInfo.balance.includes("Balance:") 
                     ? `₳${parseFloat(walletInfo.balance.replace("Balance: ", "").replace(" ADA", "")).toFixed(2)}`
                     : walletInfo.balance}

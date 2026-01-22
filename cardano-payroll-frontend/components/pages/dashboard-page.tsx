@@ -6,6 +6,7 @@ import { API_BASE_URL as CONFIG_API_BASE_URL } from "../../lib/config"
 const DEPLOYED_BACKEND_URL = "https://api-pay.sireto.net"
 const API_BASE_URL =  DEPLOYED_BACKEND_URL;
 import { Card } from "@/components/ui/card"
+import { WalletConnect } from "@/components/wallet-connect"
 import { Users, DollarSign, Wallet, TrendingUp } from "lucide-react"
 import { Employee, PayrollTransaction } from "@/lib/types"
 
@@ -125,6 +126,8 @@ export function DashboardPage() {
         <h2 className="text-3xl font-bold text-foreground mb-2">Dashboard</h2>
         <p className="text-muted-foreground">Welcome to your Cardano Payroll System</p>
       </div>
+
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map((stat) => {
