@@ -1,42 +1,22 @@
-// Wallet installation URLs for supported wallets
-export const WALLET_INSTALL_URLS: Record<string, string> = {
-  eternl: 'https://chromewebstore.google.com/detail/eternl/kmhcihpebfmpgmihbkipmjlmmioameka',
-  lace: 'https://chromewebstore.google.com/detail/lace/gafhhkghbfjjkeiendhlofajokpaflmk',
-  typhon: 'https://chromewebstore.google.com/detail/typhon-wallet/kfdniefadaanbjodldohaedphafoffoh',
-  yoroi: 'https://chromewebstore.google.com/detail/yoroi/ffnbelfdoeiohenkjibnmadjiehjhajb',
-  nami: 'https://chromewebstore.google.com/detail/nami/lpfcbjknijpeeillifnkikgncikgfhdo',
-  flint: 'https://chromewebstore.google.com/detail/flint-wallet/hnhobjmcibchnmglfbldbfabcgaknlkj',
-}
-
-/**
- * Get the installation URL for a wallet by id
- */
-export function getWalletInstallUrl(walletId: string): string | undefined {
-  return WALLET_INSTALL_URLS[walletId]
-}
+// Cardano CIP-30 Wallet Integration Logic
+// Supports: Nami, Eternl, and other CIP-30 wallets
 // Cardano CIP-30 Wallet Integration Logic
 // Supports: Nami, Eternl, and other CIP-30 wallets
 
 export interface WalletApi {
   enable(): Promise<CardanoWalletApi>
-  isEnabled(): Promise<boolean>
-  name: string
-  icon: string
-  apiVersion: string
 }
 
 export interface CardanoWalletApi {
-  getNetworkId(): Promise<number>
   getUsedAddresses(): Promise<string[]>
   getUnusedAddresses(): Promise<string[]>
-  getChangeAddress(): Promise<string>
   getRewardAddresses(): Promise<string[]>
   signData(address: string, payload: string): Promise<DataSignature>
 }
 
 export interface DataSignature {
-  signature: string  // hex-encoded COSE_Sign1
-  key: string        // hex-encoded COSE_Key
+  signature: string
+  key: string
 }
 
 export interface SupportedWallet {
