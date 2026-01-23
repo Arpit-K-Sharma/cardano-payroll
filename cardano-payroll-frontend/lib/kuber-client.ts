@@ -4,7 +4,7 @@ import { KuberApiProvider } from "kuber-client";
 export async function sendBatchAda(payments: { address: string, amount: number }[]) {
     console.log("sendBatchAda called with payments:", payments);
 
-    const kuber = new KuberApiProvider('http://172.31.1.31:8081');
+    const kuber = new KuberApiProvider('https://preprod.kuber.cardanoapi.io', 'qkanfgYFXyekN50mpgMzFuTdpkLi1vzdQItdKDr4l4edyqMFv3vaS7X6rQy8E');
 
     // Retrieve wallet info from session storage
     const session = sessionStorage.getItem('walletSession');
