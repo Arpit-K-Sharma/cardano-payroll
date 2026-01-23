@@ -30,6 +30,20 @@ public class PayrollService {
         return employeeRepository.findAll();
     }
 
+    public void recordPayrollTransaction(List<Employee> employees, String txHash, String status) {
+    for (Employee emp : employees) {
+        PayrollTransaction tx = new PayrollTransaction();
+        tx.setEmployee(emp);
+        tx.setWalletAddress(emp.getWalletAddress());
+        tx.setAmount(emp.getSalary());
+        tx.setTimestamp(LocalDateTime.now());
+        tx.setTxHash(txHash);
+        tx.setStatus(status);
+
+        transactionRepository.save(tx);
+    }
+}
+
     public void processMonthlyPayroll() {
         List<Employee> employees = getAllEmployees();
 

@@ -5,6 +5,7 @@ import { API_BASE_URL as CONFIG_API_BASE_URL } from "../../lib/config"
 
 const DEPLOYED_BACKEND_URL = "https://api-pay.sireto.net"
 const API_BASE_URL =  DEPLOYED_BACKEND_URL;
+// const API_BASE_URL =  "http:localhost:8080";
 import { Card } from "@/components/ui/card"
 import { WalletConnect } from "@/components/wallet-connect"
 import { Users, DollarSign, Wallet, TrendingUp } from "lucide-react"

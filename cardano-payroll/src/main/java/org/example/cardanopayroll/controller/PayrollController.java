@@ -22,4 +22,18 @@ public class PayrollController {
         payrollService.processMonthlyPayroll();
         return "Payroll triggered successfully!";
     }
+
+    @PostMapping("/record-payroll")
+    public ResponseEntity<String> recordPayroll(@RequestBody PayrollRecordRequest request) {
+        try {
+            payrollService.recordPayrollTransaction(
+                request.getEmployees(),
+                request.getTxHash(),
+                request.getStatus()
+            );
+            return ResponseEntity.ok("Payroll transaction recorded successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to record payroll: " + e.getMessage());
+        }
+    }
 }
