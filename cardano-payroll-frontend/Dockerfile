@@ -12,12 +12,26 @@ COPY postcss.config.mjs ./
 # Install dependencies
 RUN npm ci --production=false
 
+
 # Copy source code
 COPY . .
 
-# Accept build argument for API URL
+
+
+
+# Accept build arguments for environment variables
 ARG NEXT_PUBLIC_API_BASE_URL=https://api-pay.sireto.net
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_KUBER_API_URL=https://preprod.kuber.cardanoapi.io
+ARG NEXT_PUBLIC_KUBER_API_KEY
+ARG NEXT_PUBLIC_COMPANY_WALLET_ADDRESS
+ARG NEXT_PUBLIC_CARDANO_NETWORK=preprod
+
+# Ensure all NEXT_PUBLIC_ envs are available at build and runtime
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV NEXT_PUBLIC_KUBER_API_URL=${NEXT_PUBLIC_KUBER_API_URL}
+ENV NEXT_PUBLIC_KUBER_API_KEY=${NEXT_PUBLIC_KUBER_API_KEY}
+ENV NEXT_PUBLIC_COMPANY_WALLET_ADDRESS=${NEXT_PUBLIC_COMPANY_WALLET_ADDRESS}
+ENV NEXT_PUBLIC_CARDANO_NETWORK=${NEXT_PUBLIC_CARDANO_NETWORK}
 
 # Build the application
 RUN npm run build
