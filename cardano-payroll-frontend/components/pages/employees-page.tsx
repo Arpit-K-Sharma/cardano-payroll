@@ -1,22 +1,31 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { API_BASE_URL as CONFIG_API_BASE_URL } from "../../lib/config"
+import config from "../../lib/config";
 
-const DEPLOYED_BACKEND_URL = "https://api-pay.sireto.net"
-const API_BASE_URL =  DEPLOYED_BACKEND_URL;
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { EmployeeForm } from "@/components/forms/employee-form"
 import { EmployeeTable } from "@/components/tables/employee-table"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 import { Employee } from "@/lib/types"
 import { Plus } from "lucide-react"
+const API_BASE_URL =  config.apiBaseUrl;
 
 export function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null)
 
   useEffect(() => {
     fetchEmployees()
@@ -79,6 +88,9 @@ export function EmployeesPage() {
       }
     } catch (error) {
       console.error("Error deleting employee:", error)
+    } finally {
+      setDeleteDialogOpen(false)
+      setEmployeeToDelete(null)
     }
   }
 
@@ -94,7 +106,7 @@ export function EmployeesPage() {
             setEditingEmployee(null)
             setShowForm(!showForm)
           }}
-          className="gap-2"
+          className="gap-2 cursor-pointer"
         >
           <Plus size={20} />
           Add Employee
@@ -119,16 +131,43 @@ export function EmployeesPage() {
           <p className="text-muted-foreground">Loading employees...</p>
         </div>
       ) : (
-        <Card>
-          <EmployeeTable
-            employees={employees}
-            onEdit={(employee) => {
-              setEditingEmployee(employee)
-              setShowForm(true)
-            }}
-            onDelete={handleDeleteEmployee}
-          />
-        </Card>
+        <>
+          <Card>
+            <EmployeeTable
+              employees={employees}
+              onEdit={(employee) => {
+                setEditingEmployee(employee)
+                setShowForm(true)
+              }}
+              onDelete={(id?: number) => {
+                const emp = employees.find(e => e.id === id) || null
+                setEmployeeToDelete(emp)
+                setDeleteDialogOpen(true)
+              }}
+            />
+          </Card>
+          <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Confirm Delete</DialogTitle>
+              </DialogHeader>
+              <p>Are you sure you want to delete {employeeToDelete?.fullName || 'this employee'}?</p>
+              <DialogFooter>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleDeleteEmployee(employeeToDelete?.id)}
+                    className="cursor-pointer hover:opacity-90"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    Delete
+                  </Button>
+                  <DialogClose asChild>
+                    <Button variant="outline" className="cursor-pointer hover:opacity-90" style={{ cursor: 'pointer' }}>Cancel</Button>
+                  </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
       )}
     </div>
   )

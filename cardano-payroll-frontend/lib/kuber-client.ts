@@ -1,5 +1,7 @@
 import { KuberApiProvider } from "kuber-client";
 import * as CSL from "@emurgo/cardano-serialization-lib-asmjs";
+import config from "./config";
+import { toast } from "sonner";
 
 // Helper to convert CIP-30 UTXOs to Kuber format
 function convertCip30UtxosToKuber(utxos: string[]) {
@@ -17,31 +19,27 @@ function convertCip30UtxosToKuber(utxos: string[]) {
 
 export async function sendBatchAda(payments: { address: string, amount: number }[]) {
     // Log all payment addresses in full (no truncation)
-    console.log("sendBatchAda called with payments:", payments.map(p => ({ address: p.address, amount: p.amount })));
-
-    const kuber = new KuberApiProvider('https://preprod.kuber.cardanoapi.io', 'qkanfgYFXyekN50mpgMzFuTdpkLi1vzdQItdKDr4l4edyqMFv3vaS7X6rQy8E');
+    const kuber = new KuberApiProvider(config.kuberApiUrl , config.kuberApiKey || '');
     // Retrieve wallet info from session storage
     const session = sessionStorage.getItem('walletSession');
     if (!session) {
-        alert('Wallet not connected. Please sign in with your wallet.');
+        toast.error('Wallet not connected. Please sign in with your wallet.');
         return;
     }
-    const { id: walletId, address: walletAddress } = JSON.parse(session);
+    const { walletName: walletId, address: walletAddress } = JSON.parse(session);
     // Log wallet session with full address
-    console.log("Wallet session:", { walletId, walletAddress });
 
     // Get the wallet API from window.cardano
     if (!window.cardano) {
-        alert('window.cardano is not available. Please ensure your wallet extension is installed.');
+        toast.error('window.cardano is not available. Please ensure your wallet extension is installed.');
         return;
     }
 
     const walletApi = window.cardano[walletId];
     if (!walletApi) {
-        alert(`Wallet extension '${walletId}' not found. Please ensure your wallet is installed and connected.`);
+        toast.error(`Wallet extension '${walletId}' not found. Please ensure your wallet is installed and connected.`);
         return;
     }
-    console.log("Wallet API found:", walletApi);
 
     // Enable the wallet
     let cip30Api;
@@ -49,7 +47,7 @@ export async function sendBatchAda(payments: { address: string, amount: number }
         cip30Api = await walletApi.enable();
         console.log("Wallet enabled, CIP30 API:", cip30Api);
     } catch (error) {
-        alert('Failed to enable wallet: ' + (error as Error).message);
+        toast.error('Failed to enable wallet: ' + (error as Error).message);
         throw error;
     }
 
@@ -58,13 +56,8 @@ export async function sendBatchAda(payments: { address: string, amount: number }
         address: walletAddress,
     });
 
-    // Use the wallet address from session (already in Bech32 format)
-    // Log change address in full
-    console.log("Change address (full):", walletAddress);
 
-    // Build transaction with multiple outputs
-    // Log all output addresses in full
-    console.log("Building transaction with outputs:", payments.map(p => ({ address: p.address, value: p.amount })));
+
 
     // Debug: Check wallet UTXOs before sending (CIP-30 standard way)
     let utxos: string[] = [];
@@ -105,12 +98,14 @@ export async function sendBatchAda(payments: { address: string, amount: number }
         const signedTxCbor = Buffer.from(signedTx.to_bytes()).toString("hex");
 
         // Submit the signed transaction
-        const txHash = await cip30Api.submitTx(signedTxCbor);
-        console.log("TX_HASH=", txHash);
-        return txHash;
+        await fetch(config.apiBaseUrl + "/api/run-wallet-payroll", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signedTxCbor }),
+        });
+
     } catch (e) {
         const error = e as Error;
-        alert((error && error.message) || String(e));
         throw e;
     }
 }

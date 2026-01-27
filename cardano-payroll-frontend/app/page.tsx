@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { EmployeesPage } from "@/components/pages/employees-page"
 import { PayrollPage } from "@/components/pages/payroll-page"
-import { WalletPage } from "@/components/pages/wallet-page"
+import WalletPage from "@/components/pages/wallet-page"
 import { DashboardPage } from "@/components/pages/dashboard-page"
 
 export default function Home() {
@@ -13,7 +13,7 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-background">
       <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto p-4 sm:p-6 md:p-8">
         {currentPage === "dashboard" && <DashboardPage />}
         {currentPage === "employees" && <EmployeesPage />}
         {currentPage === "payroll" && <PayrollPage />}

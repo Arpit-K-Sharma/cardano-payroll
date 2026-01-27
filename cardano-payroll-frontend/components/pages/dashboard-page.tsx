@@ -1,15 +1,11 @@
 "use client"
-
 import { useState, useEffect } from "react"
-import { API_BASE_URL as CONFIG_API_BASE_URL } from "../../lib/config"
-
-const DEPLOYED_BACKEND_URL = "https://api-pay.sireto.net"
-const API_BASE_URL =  DEPLOYED_BACKEND_URL;
-// const API_BASE_URL =  "http:localhost:8080";
+import config from "../../lib/config";
 import { Card } from "@/components/ui/card"
-import { WalletConnect } from "@/components/wallet-connect"
-import { Users, DollarSign, Wallet, TrendingUp } from "lucide-react"
+import { Users, DollarSign, Wallet, TrendingUp, UserPlus, RefreshCw } from "lucide-react"
 import { Employee, PayrollTransaction } from "@/lib/types"
+import Link from "next/link"
+const API_BASE_URL = config.apiBaseUrl;
 
 export function DashboardPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -32,20 +28,9 @@ export function DashboardPage() {
         fetch(`${API_BASE_URL}/api/wallet/balance?address=${companyWalletAddress}`)
       ])
 
-      if (employeesRes.ok) {
-        const employeesData = await employeesRes.json()
-        setEmployees(employeesData)
-      }
-
-      if (transactionsRes.ok) {
-        const transactionsData = await transactionsRes.json()
-        setTransactions(transactionsData)
-      }
-
-      if (walletRes.ok) {
-        const balance = await walletRes.text()
-        setWalletBalance(balance)
-      }
+      if (employeesRes.ok) setEmployees(await employeesRes.json())
+      if (transactionsRes.ok) setTransactions(await transactionsRes.json())
+      if (walletRes.ok) setWalletBalance(await walletRes.text())
     } catch (error) {
       console.error("Error fetching dashboard data:", error)
     } finally {
@@ -53,63 +38,30 @@ export function DashboardPage() {
     }
   }
 
-  // Calculate stats
+  // Stats calculations
   const currentMonth = new Date().getMonth()
   const currentYear = new Date().getFullYear()
-
   const thisMonthTransactions = transactions.filter(t => {
     if (!t.timestamp) return false
     const date = new Date(t.timestamp)
     return date.getMonth() === currentMonth && date.getFullYear() === currentYear
   })
-
+  const successfulTransactions = transactions.filter(t => t.status?.toUpperCase() === "SUCCESS")
+  const failedTransactions = transactions.filter(t => t.status?.toUpperCase() === "FAILED")
   const totalPayrollThisMonth = thisMonthTransactions.reduce((sum, t) => sum + t.amount, 0)
-  const successfulTransactions = transactions.filter(t => t.status === "success")
   const totalAdaSent = successfulTransactions.reduce((sum, t) => sum + t.amount, 0)
   const averageSalary = employees.length > 0 ? employees.reduce((sum, emp) => sum + emp.salary, 0) / employees.length : 0
-  const pendingPayments = transactions.filter(t => t.status === "pending").length
-  const failedTransactions = transactions.filter(t => t.status === "failed").length
 
-  // Recent activity (last 3 transactions)
+  // Recent activity (last 5 transactions)
   const recentTransactions = transactions
     .filter(t => t.status === "success")
     .sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime())
-    .slice(0, 3)
+    .slice(0, 5)
 
-  const stats = [
-    {
-      title: "Total Employees",
-      value: employees.length.toString(),
-      change: "Active",
-      icon: Users,
-      color: "text-blue-500",
-    },
-    {
-      title: "Payroll This Month",
-      value: `₳${totalPayrollThisMonth.toFixed(2)}`,
-      change: `${thisMonthTransactions.length} transactions`,
-      icon: DollarSign,
-      color: "text-green-500",
-    },
-    {
-      title: "Wallet Balance",
-      value: walletBalance.includes("Error") 
-        ? "Error" 
-        : walletBalance.includes("Balance:") 
-          ? `₳${parseFloat(walletBalance.replace("Balance: ", "").replace(" ADA", "")).toFixed(2)}`
-          : walletBalance,
-      change: "Available",
-      icon: Wallet,
-      color: "text-purple-500",
-    },
-    {
-      title: "Processed Payments",
-      value: successfulTransactions.length.toString(),
-      change: "All successful",
-      icon: TrendingUp,
-      color: "text-orange-500",
-    },
-  ]
+  // Recent employees (last 5)
+  const recentEmployees = employees
+    .slice(-5)
+    .reverse()
 
   if (loading) {
     return (
@@ -122,84 +74,79 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <div className="p-8 space-y-8">
+      <div>
         <h2 className="text-3xl font-bold text-foreground mb-2">Dashboard</h2>
         <p className="text-muted-foreground">Welcome to your Cardano Payroll System</p>
       </div>
 
-
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <Card key={stat.title} className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground mt-2">{stat.change}</p>
-                </div>
-                <Icon className={`${stat.color} opacity-20`} size={24} />
-              </div>
-            </Card>
-          )
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h3>
-          <div className="space-y-4">
-            {recentTransactions.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No recent activity</p>
-            ) : (
-              recentTransactions.map((transaction, idx) => (
-                <div key={idx} className="flex items-center justify-between pb-4 border-b border-border last:border-0">
-                  <div>
-                    <p className="font-medium text-foreground">Payroll Processed</p>
-                    <p className="text-sm text-muted-foreground">Employee: {transaction.employee.fullName}</p>
-                  </div>
-                  <span className="text-green-600 font-medium">+₳{transaction.amount.toFixed(2)}</span>
-                </div>
-              ))
-            )}
+      {/* Key Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card className="p-6 flex items-center gap-4">
+          <Users className="text-blue-500" size={32} />
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Total Employees</p>
+            <p className="text-2xl font-bold">{employees.length}</p>
+          </div>
+        </Card>
+        <Card className="p-6 flex items-center gap-4">
+          <DollarSign className="text-green-500" size={32} />
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Payroll This Month</p>
+            <p className="text-2xl font-bold">₳{totalPayrollThisMonth.toFixed(2)}</p>
           </div>
         </Card>
 
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Quick Stats</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Company Wallet Balance</span>
-              <span className="font-semibold text-foreground">
-                {walletBalance.includes("Error") 
-                  ? walletBalance 
-                  : walletBalance.includes("Balance:")
-                    ? `₳${parseFloat(walletBalance.replace("Balance: ", "").replace(" ADA", "")).toFixed(2)}`
-                    : walletBalance}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Average Salary</span>
-              <span className="font-semibold text-foreground">₳{averageSalary.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Total ADA Sent</span>
-              <span className="font-semibold text-foreground">₳{totalAdaSent.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Pending Payments</span>
-              <span className="font-semibold text-foreground">{pendingPayments}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Failed Transactions</span>
-              <span className="font-semibold text-foreground">{failedTransactions}</span>
-            </div>
+        <Card className="p-6 flex items-center gap-4">
+          <Wallet className="text-purple-500" size={32} />
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Wallet Balance</p>
+            <p className="text-2xl font-bold">
+              {walletBalance.includes("Error")
+                ? walletBalance
+                : walletBalance.includes("Balance:")
+                  ? `₳${parseFloat(walletBalance.replace("Balance: ", "").replace(" ADA", "")).toFixed(2)}`
+                  : walletBalance}
+            </p>
           </div>
         </Card>
       </div>
+
+      {/* Payroll Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Card className="p-6 flex flex-col gap-2">
+          <h3 className="text-lg font-semibold mb-2">Payroll Overview</h3>
+          <div className="flex justify-between text-sm">
+            <span>Average Salary</span>
+            <span>₳{averageSalary.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Successful Transactions</span>
+            <span>{successfulTransactions.length}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Failed Transactions</span>
+            <span>{failedTransactions.length}</span>
+          </div>
+        </Card>
+        <Card className="p-6 flex flex-col gap-2">
+          <h3 className="text-lg font-semibold mb-2">Recent Employees</h3>
+          {recentEmployees.length === 0 ? (
+            <p className="text-muted-foreground">No employees found.</p>
+          ) : (
+            <ul className="text-sm">
+              {recentEmployees.map((emp, idx) => (
+                <li key={idx} className="flex justify-between">
+                  <span>{emp.fullName}</span>
+                  <span className="text-muted-foreground">₳{emp.salary}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+      </div>
+
     </div>
   )
 }

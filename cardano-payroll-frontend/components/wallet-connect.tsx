@@ -98,7 +98,7 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
       let api
       try {
         // Always request preprod network and allow network switch for all wallets
-        api = await walletApi.enable({ network: 'preview', allowNetworkSwitch: true })
+        api = await walletApi.enable({ network: 'preprod', allowNetworkSwitch: true })
       } catch (e) {
         // Fallback to plain enable()
         api = await walletApi.enable()
@@ -253,6 +253,7 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
                       onClick={() => connectWallet(wallet.id)}
                       disabled={isConnecting}
                       size="sm"
+                      className="cursor-pointer"
                     >
                       {isConnecting ? 'Connecting...' : 'Connect'}
                     </Button>

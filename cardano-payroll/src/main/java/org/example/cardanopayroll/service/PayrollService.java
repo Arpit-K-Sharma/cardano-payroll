@@ -1,6 +1,7 @@
 package org.example.cardanopayroll.service;
 import org.example.cardanopayroll.model.Employee;
 import org.example.cardanopayroll.model.PayrollTransaction;
+import org.example.cardanopayroll.model.SignedTxRequest;
 import org.example.cardanopayroll.repository.EmployeeRepository;
 import org.example.cardanopayroll.repository.PayrollTransactionRepository;
 import org.example.cardanopayroll.utils.CardanoTxUtil;
@@ -30,19 +31,30 @@ public class PayrollService {
         return employeeRepository.findAll();
     }
 
-    public void recordPayrollTransaction(List<Employee> employees, String txHash, String status) {
-    for (Employee emp : employees) {
-        PayrollTransaction tx = new PayrollTransaction();
-        tx.setEmployee(emp);
-        tx.setWalletAddress(emp.getWalletAddress());
-        tx.setAmount(emp.getSalary());
-        tx.setTimestamp(LocalDateTime.now());
-        tx.setTxHash(txHash);
-        tx.setStatus(status);
 
-        transactionRepository.save(tx);
+    public void processWalletPayroll(String signedTxCbor) {
+        List<Employee> employees = getAllEmployees();
+
+        try {
+            // Submit the signed transaction using the backend utility
+            String txHash = cardanoTxUtil.sendWalletAda(signedTxCbor);
+            System.out.println("Batch transaction successful! TX Hash: " + txHash);
+
+            // Record the transaction for each employee
+            for (Employee emp : employees) {
+                PayrollTransaction tx = new PayrollTransaction();
+                tx.setEmployee(emp);
+                tx.setWalletAddress(emp.getWalletAddress());
+                tx.setAmount(emp.getSalary());
+                tx.setTimestamp(LocalDateTime.now());
+                tx.setTxHash(txHash);
+                tx.setStatus("SUCCESS");
+                transactionRepository.save(tx);
+            }
+        } catch (Exception e) {
+            System.out.println("Batch transaction failed: " + e.getMessage());
+        }
     }
-}
 
     public void processMonthlyPayroll() {
         List<Employee> employees = getAllEmployees();

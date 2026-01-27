@@ -1,5 +1,6 @@
 package org.example.cardanopayroll.utils;
 
+import org.example.cardanopayroll.model.SignedTxRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -26,9 +27,18 @@ public class CardanoTxUtil {
     @Value("${BATCH_SCRIPT_PATH}")
     private String batchScriptPath;
 
+    @Value("${BATCH_WALLET_PATH:scripts/send-wallet-ada.js}")
+    private String batchWalletPath;
+
     @Value("${BLOCKFROST_BASE_URL:https://cardano-preprod.blockfrost.io/api/v0}")
     private String blockfrostBaseUrl;
 
+
+    @Value("${KUBER_API_URL}")
+    private String kuberApiUrl;
+
+    @Value("${KUBER_API_KEY}")
+    private String kuberApiKey;
 
     /**
      * Send ADA to multiple addresses in a single transaction
@@ -46,6 +56,26 @@ public class CardanoTxUtil {
                 paymentData
         );
 
+        pb.directory(scriptFile.getParentFile());
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+
+        String txHash = processNodeOutput(process);
+
+        awaitConfirmation(txHash);
+
+        return txHash;
+    }
+
+    public String sendWalletAda(String signedTxCbor) throws Exception {
+        File scriptFile = resolveScriptFile(batchWalletPath);
+        ProcessBuilder pb = new ProcessBuilder(
+                "node",
+                scriptFile.getAbsolutePath(),
+                kuberApiUrl,
+                kuberApiKey,
+                signedTxCbor
+        );
         pb.directory(scriptFile.getParentFile());
         pb.redirectErrorStream(true);
         Process process = pb.start();
