@@ -20,12 +20,17 @@ public class WalletService {
     private final OkHttpClient client = new OkHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private static final String BASE_URL = "https://cardano-preprod.blockfrost.io/api/v0";
+    @Value("${BLOCKFROST_BASE_URL:https://cardano-preprod.blockfrost.io/api/v0}")
+    private String blockfrostBaseUrl;
+
+    private String getBaseUrl() {
+        return blockfrostBaseUrl;
+    }
 
     // Get balance of wallet
     public String getWalletBalance(String address) throws IOException {
         Request request = new Request.Builder()
-                .url(BASE_URL + "/addresses/" + address)
+                .url(getBaseUrl() + "/addresses/" + address)
                 .addHeader("project_id", blockfrostApiKey)
                 .build();
 
@@ -50,7 +55,7 @@ public class WalletService {
     // Get transactions of wallet
     public String getWalletTransactions(String address) throws IOException {
         Request request = new Request.Builder()
-                .url(BASE_URL + "/addresses/" + address + "/transactions")
+                .url(getBaseUrl() + "/addresses/" + address + "/transactions")
                 .addHeader("project_id", blockfrostApiKey)
                 .build();
 

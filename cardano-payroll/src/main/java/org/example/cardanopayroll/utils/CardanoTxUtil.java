@@ -33,6 +33,8 @@ public class CardanoTxUtil {
     @Value("${BLOCKFROST_BASE_URL:https://cardano-preprod.blockfrost.io/api/v0}")
     private String blockfrostBaseUrl;
 
+    @Value("${NETWORK:preprod}")
+    private String network;
 
     @Value("${KUBER_API_URL}")
     private String kuberApiUrl;
@@ -53,6 +55,8 @@ public class CardanoTxUtil {
                 scriptFile.getAbsolutePath(),
                 blockfrostApiKey,
                 companySkey,
+                blockfrostBaseUrl,
+                network,
                 paymentData
         );
 

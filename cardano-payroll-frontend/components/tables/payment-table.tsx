@@ -2,6 +2,7 @@
 
 import { PayrollTransaction } from "@/lib/types"
 import { CheckCircle2, XCircle, Clock } from "lucide-react"
+import config from "../../lib/config"
 
 interface PaymentTableProps {
   transactions: PayrollTransaction[]
@@ -38,6 +39,8 @@ export function PaymentTable({ transactions }: PaymentTableProps) {
       return timestamp
     }
   }
+
+  const network = config.cardanoNetwork;
 
   return (
     <div className="overflow-x-auto">
@@ -87,7 +90,7 @@ export function PaymentTable({ transactions }: PaymentTableProps) {
                 <td className="px-6 py-4 text-sm font-mono text-muted-foreground">
                   {transaction.txHash && transaction.txHash !== "FAILED" ? (
                     <a
-                      href={`https://preprod.cardanoscan.io/transaction/${transaction.txHash}`}
+                      href={`https://${network}.cardanoscan.io/transaction/${transaction.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800 hover:underline break-all"

@@ -3,9 +3,11 @@ import { Lucid, Blockfrost } from "lucid-cardano";
 // Arguments from Java
 const API_KEY = process.argv[2];
 const PRIVATE_KEY = process.argv[3];
-const PAYMENT_DATA = process.argv[4]; // Format: "addr1,10;addr2,20;addr3,15"
+const BLOCKFROST_URL = process.argv[4]; // e.g. "https://cardano-preprod.blockfrost.io/api/v0"
+const NETWORK = process.argv[5]; // "Mainnet" or "Preprod"
+const PAYMENT_DATA = process.argv[6]; // Format: "addr1,10;addr2,20;addr3,15"
 
-if (!API_KEY || !PRIVATE_KEY || !PAYMENT_DATA) {
+if (!API_KEY || !PRIVATE_KEY || !BLOCKFROST_URL || !NETWORK || !PAYMENT_DATA) {
   console.error("Missing arguments");
   process.exit(1);
 }
@@ -49,8 +51,8 @@ function isRetryable(message) {
 
 async function submitBatchPayment() {
   const lucid = await Lucid.new(
-    new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", API_KEY),
-    "Preprod"
+    new Blockfrost(BLOCKFROST_URL, API_KEY),
+    NETWORK === "Mainnet" ? "Mainnet" : "Preprod"
   );
 
   lucid.selectWalletFromPrivateKey(PRIVATE_KEY);
@@ -71,7 +73,7 @@ async function submitBatchPayment() {
 
   // Build transaction with multiple outputs
   let tx = lucid.newTx();
-  
+
   for (const payment of payments) {
     tx = tx.payToAddress(payment.address, { lovelace: payment.lovelace });
     console.log(`Added output: ${payment.lovelace / 1_000_000n} ADA to ${payment.address}`);

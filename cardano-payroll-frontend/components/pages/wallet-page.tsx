@@ -32,6 +32,7 @@ interface WalletInfo {
 
 const COMPANY_WALLET_ADDRESS = config.companyWalletAddress
 const API_BASE_URL = config.apiBaseUrl
+const network = config.cardanoNetwork
 
 export default function WalletPage() {
   const [walletAddress, setWalletAddress] = useState(COMPANY_WALLET_ADDRESS)
@@ -174,7 +175,7 @@ export default function WalletPage() {
                   walletInfo.transactions.slice(0, 10).map((tx, idx) => (
                       <a
                         key={tx.tx_hash || idx}
-                        href={tx.tx_hash ? `https://preprod.cardanoscan.io/transaction/${tx.tx_hash}` : undefined}
+                        href={tx.tx_hash ? `https://${network}.cardanoscan.io/transaction/${tx.tx_hash}` : undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block group"
