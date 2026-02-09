@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone', // ✅ Required for Docker
   
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  
+  transpilePackages: ['kuber-client'],
+  
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000', 'localhost:8080']

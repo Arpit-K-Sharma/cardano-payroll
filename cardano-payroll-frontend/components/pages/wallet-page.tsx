@@ -1,30 +1,45 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { API_BASE_URL as CONFIG_API_BASE_URL } from "../../lib/config"
-
-const DEPLOYED_BACKEND_URL = "https://api-pay.sireto.net"
-const API_BASE_URL =  DEPLOYED_BACKEND_URL;
+import config from "../../lib/config"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2 } from "lucide-react"
+import {
+  Loader2,
+  Wallet,
+  TrendingUp,
+  Copy,
+  Check,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Zap,
+  ExternalLink,
+} from "lucide-react"
+
+interface Transaction {
+  tx_hash: string
+  tx_index: number
+  block_height: number
+  block_time: number
+}
 
 interface WalletInfo {
   address: string
   balance: string
-  transactions: string[]
+  transactions: Transaction[]
 }
 
-const COMPANY_WALLET_ADDRESS = "addr_test1vpyjcw5rrlgrpq7ry9c2z2frnsaxccd63nthac4ckenfpzc89shfw"
+const COMPANY_WALLET_ADDRESS = config.companyWalletAddress
+const API_BASE_URL = config.apiBaseUrl
 
-export function WalletPage() {
+export default function WalletPage() {
   const [walletAddress, setWalletAddress] = useState(COMPANY_WALLET_ADDRESS)
   const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null)
   const [loading, setLoading] = useState(false)
+  const [copiedAddress, setCopiedAddress] = useState(false)
 
   useEffect(() => {
-    // Automatically load company wallet balance on mount
     handleCheckBalance()
   }, [])
 
@@ -34,121 +49,191 @@ export function WalletPage() {
 
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE_URL}/api/wallet/balance?address=${addressToCheck}`)
-      const balance = await response.text()
 
-      const txResponse = await fetch(`${API_BASE_URL}/api/wallet/transactions?address=${addressToCheck}`)
-      const transactions = await txResponse.text()
+      const balanceRes = await fetch(
+        `${API_BASE_URL}/api/wallet/balance?address=${addressToCheck}`
+      )
+      const balance = await balanceRes.text()
 
-      setWalletInfo({
-        address: addressToCheck,
-        balance,
-        transactions: [transactions],
-      })
-    } catch (error) {
-      console.error("Error fetching wallet info:", error)
+      const txRes = await fetch(
+        `${API_BASE_URL}/api/wallet/transactions?address=${addressToCheck}`
+      )
+      const transactions = await txRes.text()
+
+      try {
+        const parsedTxs = JSON.parse(transactions)
+        setWalletInfo({
+          address: addressToCheck,
+          balance,
+          transactions: Array.isArray(parsedTxs) ? parsedTxs : [parsedTxs],
+        })
+      } catch {
+        setWalletInfo({
+          address: addressToCheck,
+          balance,
+          transactions: [],
+        })
+      }
+    } catch (err) {
+      console.error(err)
     } finally {
       setLoading(false)
     }
   }
 
+  const handleCopyAddress = () => {
+    if (!walletInfo?.address) return
+    navigator.clipboard.writeText(walletInfo.address)
+    setCopiedAddress(true)
+    setTimeout(() => setCopiedAddress(false), 2000)
+  }
+
+  const balanceValue = walletInfo?.balance.includes("Balance:")
+    ? parseFloat(
+        walletInfo.balance.replace("Balance: ", "").replace(" ADA", "")
+      ).toFixed(2)
+    : walletInfo?.balance
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-foreground mb-2">Wallet Management</h2>
-        <p className="text-muted-foreground">Check Cardano wallet balances and transaction history</p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
+      {/* Glow blobs */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute top-0 -left-40 w-96 h-96 bg-primary/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-10 -right-40 w-96 h-96 bg-accent/30 rounded-full blur-3xl animate-pulse" />
       </div>
 
-      <Card className="p-6 mb-8">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Cardano Wallet Address</label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="addr1..."
-                value={walletAddress}
-                onChange={(e) => setWalletAddress(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleCheckBalance} disabled={loading || !walletAddress}>
-                {loading ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2" size={16} />
-                    Loading...
-                  </>
-                ) : (
-                  "Check Balance"
-                )}
-              </Button>
+      {/* Header */}
+      <header className="top-0 z-10 border-b border-primary/20 bg-gradient-to-r from-background to-primary/10 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-6 py-6 flex flex-row items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/40">
+              <Wallet className="w-6 h-6 text-white" />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Default: Company Wallet Address (pre-loaded)
-            </p>
+            <div>
+              <h1 className="text-3xl font-bold">Cardano Wallet</h1>
+              <p className="text-sm text-muted-foreground">
+                Real-time balance & transaction monitor
+              </p>
+            </div>
           </div>
-        </div>
-      </Card>
-
-      {walletInfo && (
-        <div className="flex flex-col gap-8">
-          <Card className="p-6 mb-2 shadow-lg bg-gradient-to-br from-white via-blue-50 to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 border-0">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Wallet Balance</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Address</p>
-                <p className="font-mono text-sm break-all text-foreground">{walletInfo.address}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Current Balance</p>
-                <p className="text-3xl font-bold text-foreground">
-                  {walletInfo.balance.includes("Balance:") 
-                    ? `₳${parseFloat(walletInfo.balance.replace("Balance: ", "").replace(" ADA", "")).toFixed(2)}`
-                    : walletInfo.balance}
-                </p>
-              </div>
+          {walletInfo && (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-sm font-semibold text-black">Current Balance:</span>
+              <span className="text-xl font-extrabold text-black">{balanceValue}</span>
+              <span className="text-lg font-bold text-black">₳</span>
             </div>
-          </Card>
+          )}
+        </div>
+      </header>
 
-          <Card className="p-6 shadow-lg bg-gradient-to-br from-white via-green-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 border-0">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Recent Transactions</h3>
-            <div className="space-y-2">
-              {walletInfo.transactions && walletInfo.transactions.length > 0 ? (
-                (() => {
-                  let txs: any[] = [];
-                  try {
-                    txs = JSON.parse(walletInfo.transactions[0]);
-                  } catch {
-                    return <p className="text-sm text-muted-foreground font-mono break-all">{walletInfo.transactions[0]}</p>;
-                  }
-                  if (!Array.isArray(txs) || txs.length === 0) {
-                    return <p className="text-muted-foreground">No transactions found</p>;
-                  }
-                  return (
-                    <div className="flex flex-col gap-4">
-                      {txs.slice(0, 10).map((tx, idx) => (
-                        <div key={tx.tx_hash || idx} className="flex flex-col md:flex-row md:items-center gap-2 px-4 py-3 rounded-xl bg-white/80 dark:bg-gray-900/80 shadow-sm hover:shadow-md transition-shadow">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold text-foreground">Tx Hash:</span>
-                              <span className="font-mono text-xs break-all">{tx.tx_hash}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                              <span>Block: <span className="font-mono">{tx.block_height}</span></span>
-                              <span>Index: <span className="font-mono">{tx.tx_index}</span></span>
-                              <span>Time: <span className="font-mono">{tx.block_time ? new Date(tx.block_time * 1000).toLocaleString() : 'N/A'}</span></span>
+      <main className="max-w-7xl mx-auto px-6 py-10 space-y-8">
+        {/* Address Input */}
+        <Card className="p-6 bg-white dark:bg-card border-2 border-primary/30 shadow-xl shadow-primary/20 rounded-2xl">
+          <label className="block text-sm font-semibold mb-3">
+            Wallet Address
+          </label>
+          <div className="flex gap-3">
+            <Input
+              value={walletAddress}
+              onChange={(e) => setWalletAddress(e.target.value)}
+              placeholder="addr1..."
+              className="h-11 bg-white border-2 border-primary/30 focus:ring-2 focus:ring-primary/40"
+            />
+            <Button
+              onClick={handleCheckBalance}
+              disabled={loading}
+              className="h-11 px-6 bg-black text-white shadow-xl shadow-primary/40 hover:scale-[1.02] cursor-pointer"
+            >
+              {loading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <TrendingUp />
+              )}
+            </Button>
+          </div>
+          <p className="mt-3 text-xs flex items-center gap-1 text-muted-foreground">
+            <Zap className="w-3 h-3 text-primary" />
+            Defaulted to company wallet
+          </p>
+        </Card>
+
+        {walletInfo && (
+          <>
+            <Card className="p-6 border-2 border-primary/20 bg-white dark:bg-card rounded-2xl shadow-xl shadow-primary/20">
+              <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
+                <Zap className="text-primary" />
+                Recent Transactions
+              </h3>
+
+              <div className="space-y-3">
+                {walletInfo.transactions.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-10">
+                    No transactions found
+                  </p>
+                ) : (
+                  walletInfo.transactions.slice(0, 10).map((tx, idx) => (
+                      <a
+                        key={tx.tx_hash || idx}
+                        href={tx.tx_hash ? `https://preprod.cardanoscan.io/transaction/${tx.tx_hash}` : undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block group"
+                      >
+                        <div
+                          className="p-4 rounded-xl border-2 border-primary/10 bg-gradient-to-r from-white to-primary/5 hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 hover:border-primary/40 shadow-sm hover:shadow-md transition cursor-pointer flex items-center justify-between gap-4 flex-wrap"
+                        >
+                          <div className="flex gap-3 items-center flex-1 min-w-0">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-mono text-xs truncate">
+                                {tx.tx_hash
+                                  ? `${tx.tx_hash.substring(0, 20)}...${tx.tx_hash.substring(tx.tx_hash.length - 16)}`
+                                  : 'N/A'}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-muted-foreground">
+                                  {tx.block_time
+                                    ? new Date(
+                                        tx.block_time * 1000
+                                      ).toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      })
+                                    : "N/A"}
+                                </span>
+                                <span className="text-xs text-muted-foreground opacity-70">
+                                  {tx.block_time
+                                    ? new Date(
+                                        tx.block_time * 1000
+                                      ).toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : ""}
+                                </span>
+                              </div>
                             </div>
                           </div>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <div className="text-right">
+                              <p className="text-xs font-mono font-semibold text-primary">
+                                Block {tx.block_height}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Index {tx.tx_index}
+                              </p>
+                            </div>
+                            <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2" />
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  );
-                })()
-              ) : (
-                <p className="text-muted-foreground">No transactions found</p>
-              )}
-            </div>
-          </Card>
-        </div>
-      )}
+                      </a>
+                  ))
+                )}
+              </div>
+            </Card>
+          </>
+        )}
+      </main>
     </div>
   )
 }

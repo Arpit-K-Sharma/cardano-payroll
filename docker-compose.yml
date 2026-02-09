@@ -27,15 +27,20 @@ services:
       context: .  # Root directory to access scripts/
       dockerfile: ./cardano-payroll/Dockerfile
     container_name: cardano-payroll-backend
+    env_file:
+      - .env
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cardano_payroll
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-root}
       BLOCKFROST_PROJECT_ID: ${BLOCKFROST_PROJECT_ID}
       COMPANY_SKEY: ${COMPANY_SKEY}
       COMPANY_WALLET_ADDRESS: ${COMPANY_WALLET_ADDRESS}
+      KUBER_API_URL: ${KUBER_API_URL:-https://preprod.kuber.cardanoapi.io}
+      KUBER_API_KEY: ${KUBER_API_KEY}
       BATCH_SCRIPT_PATH: /app/scripts/send-ada.js
+      BATCH_WALLET_PATH: /app/scripts/send-wallet-ada.js
     ports:
       - "8080:8080"
     depends_on:
@@ -52,10 +57,13 @@ services:
       context: ./cardano-payroll-frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: https://api-pay.sireto.net
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+        NEXT_PUBLIC_KUBER_API_URL: ${NEXT_PUBLIC_KUBER_API_URL}
+        NEXT_PUBLIC_KUBER_API_KEY: ${NEXT_PUBLIC_KUBER_API_KEY}
+        NEXT_PUBLIC_COMPANY_WALLET_ADDRESS: ${NEXT_PUBLIC_COMPANY_WALLET_ADDRESS}
+        NEXT_PUBLIC_CARDANO_NETWORK: ${NEXT_PUBLIC_CARDANO_NETWORK}
     container_name: cardano-payroll-frontend
-    environment:
-      NEXT_PUBLIC_API_BASE_URL: https://api-pay.sireto.net
+
     ports:
       - "3000:3000"
 

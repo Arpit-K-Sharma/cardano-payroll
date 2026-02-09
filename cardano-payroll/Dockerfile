@@ -26,11 +26,17 @@ WORKDIR /app
 # Install Node.js
 RUN apk add --no-cache nodejs npm
 
+
 # Copy JAR
 COPY --from=build /app/target/*.jar app.jar
 
+# Copy .env file for backend envs
+COPY ../.env .env
+
 # Copy scripts from ROOT (not cardano-payroll/scripts)
 COPY scripts ./scripts
+
+# Environment variables will be provided at runtime
 
 # Install Node dependencies
 WORKDIR /app/scripts

@@ -3,6 +3,8 @@ package org.example.cardanopayroll.controller;
 import org.example.cardanopayroll.repository.PayrollTransactionRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/transactions")
 @CrossOrigin(origins = "*")
@@ -19,6 +21,7 @@ public class PayrollTransactionController {
     public Object all() {
         return repository.findAll();
     }
+
 
     // Transactions for one employee
     @GetMapping("/{employeeId}")

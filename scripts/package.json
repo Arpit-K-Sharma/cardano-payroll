@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
+    "kuber-client": "^3.3.6",
     "lucid-cardano": "^0.10.11"
   }
 }

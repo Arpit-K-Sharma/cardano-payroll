@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useEffect as useLayoutEffect, useState as useLayoutState } from 'react'
 import { Buffer } from 'buffer'
 let Address: any = null
 if (typeof window !== 'undefined') {
@@ -9,6 +8,8 @@ if (typeof window !== 'undefined') {
     Address = mod.Address
   })
 }
+
+import config from '@/lib/config'
 import { Button } from '@/components/ui/button'
 
 // Wallet configuration
@@ -94,11 +95,12 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
 
       const walletApi = (window as any).cardano[walletId]
 
+
       // Try to show the wallet chooser popup if available, fallback to plain enable()
       let api
       try {
-        // Always request preprod network and allow network switch for all wallets
-        api = await walletApi.enable({ network: 'preprod', allowNetworkSwitch: true })
+        // Use network from config and allow network switch for all wallets
+        api = await walletApi.enable({ network: config.cardanoNetwork, allowNetworkSwitch: true })
       } catch (e) {
         // Fallback to plain enable()
         api = await walletApi.enable()
@@ -253,6 +255,7 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
                       onClick={() => connectWallet(wallet.id)}
                       disabled={isConnecting}
                       size="sm"
+                      className="cursor-pointer"
                     >
                       {isConnecting ? 'Connecting...' : 'Connect'}
                     </Button>

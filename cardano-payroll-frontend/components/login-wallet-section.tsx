@@ -23,7 +23,37 @@ export function LoginWalletSection() {
   useEffect(() => {
     const session = typeof window !== 'undefined' ? sessionStorage.getItem('walletSession') : null;
     if (session) {
-      setConnectedWallet(JSON.parse(session));
+      try {
+        const parsed = JSON.parse(session)
+        setConnectedWallet({ id: parsed.walletName || parsed.id, address: parsed.address })
+      } catch {
+        setConnectedWallet(null)
+      }
+    }
+
+    // Listen for wallet connection/disconnection events
+    const handleWalletConnected = () => {
+      const session = sessionStorage.getItem('walletSession')
+      if (session) {
+        try {
+          const parsed = JSON.parse(session)
+          setConnectedWallet({ id: parsed.walletName || parsed.id, address: parsed.address })
+        } catch {
+          setConnectedWallet(null)
+        }
+      }
+    }
+
+    const handleWalletDisconnected = () => {
+      setConnectedWallet(null)
+    }
+
+    window.addEventListener('wallet-connected', handleWalletConnected)
+    window.addEventListener('wallet-disconnected', handleWalletDisconnected)
+
+    return () => {
+      window.removeEventListener('wallet-connected', handleWalletConnected)
+      window.removeEventListener('wallet-disconnected', handleWalletDisconnected)
     }
   }, []);
 
@@ -31,7 +61,8 @@ export function LoginWalletSection() {
     const wallet = { id: walletId, address };
     setConnectedWallet(wallet);
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('walletSession', JSON.stringify(wallet));
+      sessionStorage.setItem('walletSession', JSON.stringify({ walletName: walletId, address }));
+      window.dispatchEvent(new Event('wallet-connected'))
     }
     setOpen(false);
   }
@@ -40,6 +71,7 @@ export function LoginWalletSection() {
     setConnectedWallet(null);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('walletSession');
+      window.dispatchEvent(new Event('wallet-disconnected'))
     }
   }
 
@@ -54,26 +86,34 @@ export function LoginWalletSection() {
         <div className="space-y-2">
           <div className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            {/* Show wallet icon and name */}
+            {/* Show real wallet icon from window.cardano */}
             {(() => {
+              const walletObj = typeof window !== "undefined" && (window as any).cardano?.[connectedWallet.id]
               const walletMeta = SUPPORTED_WALLETS.find(w => w.id === connectedWallet.id)
-              return walletMeta ? (
+              const displayName = walletObj?.name || walletMeta?.name || connectedWallet.id
+              const icon = walletObj?.icon
+              
+              return (
                 <span className="flex items-center gap-1 text-xs font-mono text-green-700 dark:text-green-400">
-                  <span className="text-base">{walletMeta.icon}</span>
-                  <span>{walletMeta.name}</span>
+                  {icon ? (
+                    <img
+                      src={icon}
+                      alt={displayName}
+                      className="w-4 h-4"
+                    />
+                  ) : (
+                    <span className="text-base">{walletMeta?.icon || '💼'}</span>
+                  )}
+                  <span>{displayName}</span>
                   <span className="mx-1">·</span>
                   <span>{formatAddress(connectedWallet.address)}</span>
-                </span>
-              ) : (
-                <span className="text-xs font-mono text-green-700 dark:text-green-400">
-                  {formatAddress(connectedWallet.address)}
                 </span>
               )
             })()}
           </div>
           <Button
             variant="outline"
-            className="w-full bg-transparent text-xs"
+            className="w-full bg-transparent text-xs cursor-pointer"
             size="sm"
             onClick={handleDisconnect}
           >
@@ -83,7 +123,7 @@ export function LoginWalletSection() {
       ) : (
         <Button
           variant="outline"
-          className="w-full bg-transparent"
+          className="w-full bg-transparent cursor-pointer"
           size="sm"
           onClick={() => setOpen(true)}
         >
