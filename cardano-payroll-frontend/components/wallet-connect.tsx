@@ -11,6 +11,13 @@ if (typeof window !== 'undefined') {
 
 import config from '@/lib/config'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 
 // Wallet configuration
 const SUPPORTED_WALLETS = [
@@ -34,21 +41,29 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Testnet picker state
+  const [showTestnetPicker, setShowTestnetPicker] = useState(false)
+  const [pendingConnection, setPendingConnection] = useState<{
+    walletId: string
+    address: string
+    walletInfo: typeof SUPPORTED_WALLETS[number] | undefined
+  } | null>(null)
+
   useEffect(() => {
-  const session = sessionStorage.getItem('walletSession')
-  if (session) {
-    const { id, address } = JSON.parse(session)
-    const walletInfo = SUPPORTED_WALLETS.find(w => w.id === id)
-    if (walletInfo && address) {
-      setConnectedWallet({
-        id,
-        name: walletInfo.name,
-        icon: walletInfo.icon,
-      })
-      setWalletAddress(address)
+    const session = sessionStorage.getItem('walletSession')
+    if (session) {
+      const { id, address } = JSON.parse(session)
+      const walletInfo = SUPPORTED_WALLETS.find(w => w.id === id)
+      if (walletInfo && address) {
+        setConnectedWallet({
+          id,
+          name: walletInfo.name,
+          icon: walletInfo.icon,
+        })
+        setWalletAddress(address)
+      }
     }
-  }
-}, [])
+  }, [])
 
   // Check for installed wallets
   const checkInstalledWallets = () => {
@@ -76,12 +91,48 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
 
     // Initial check after a short delay to allow extensions to load
     setTimeout(checkWallets, 100)
-    
+
     // Periodic check for newly installed wallets
     const interval = setInterval(checkWallets, 1000)
-    
+
     return () => clearInterval(interval)
   }, [])
+
+  // Shared helper — called once network is determined
+  const finalizeConnection = (
+    walletId: string,
+    address: string,
+    walletInfo: typeof SUPPORTED_WALLETS[number] | undefined
+  ) => {
+    const connectedInfo = {
+      id: walletId,
+      name: walletInfo?.name || walletId,
+      icon: walletInfo?.icon || '💼',
+    }
+
+    setConnectedWallet(connectedInfo)
+    setWalletAddress(address)
+
+    sessionStorage.setItem('walletSession', JSON.stringify({ id: walletId, address }))
+
+    if (onConnect) {
+      onConnect(walletId, address)
+    }
+
+    console.log('Connected to', walletId, 'with address:', address)
+  }
+
+  // Called when user picks preprod or preview in the testnet dialog
+  const handleTestnetChoice = (network: 'preprod' | 'preview') => {
+    sessionStorage.setItem('cardanoTestnet', network)
+    setShowTestnetPicker(false)
+    if (pendingConnection) {
+      const { walletId, address, walletInfo } = pendingConnection
+      setPendingConnection(null)
+      finalizeConnection(walletId, address, walletInfo)
+    }
+    setIsConnecting(false)
+  }
 
   // Connect to wallet
   const connectWallet = async (walletId: string) => {
@@ -137,26 +188,15 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
 
       const walletInfo = SUPPORTED_WALLETS.find(w => w.id === walletId)
 
-      const connectedInfo = {
-        id: walletId,
-        name: walletInfo?.name || walletId,
-        icon: walletInfo?.icon || '💼',
+      // If testnet address, pause and ask user to pick preprod vs preview
+      if (address.startsWith('addr_test1')) {
+        setPendingConnection({ walletId, address, walletInfo })
+        setShowTestnetPicker(true)
+        return
       }
 
-      setConnectedWallet(connectedInfo)
-      setWalletAddress(address)
-
-      sessionStorage.setItem('walletSession', JSON.stringify({
-        id: walletId,
-        address,
-      }))
-
-      if (onConnect) {
-        onConnect(walletId, address)
-      }
-
-      console.log('Connected to', walletId, 'with address:', address)
-      console.log('usedAddresses:', usedAddresses)
+      // Mainnet — complete immediately
+      finalizeConnection(walletId, address, walletInfo)
     } catch (err: any) {
       console.error('Wallet connection error:', err)
       setError(err.message || 'Failed to connect to wallet')
@@ -186,7 +226,7 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
   return (
     <div className="flex flex-col gap-4 items-center justify-center p-6">
       <h2 className="text-2xl font-bold mb-2 text-foreground">Connect Cardano Wallet</h2>
-      
+
       {connectedWallet ? (
         <div className="flex flex-col items-center gap-4 w-full max-w-md">
           <div className="w-full p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 flex items-center justify-between">
@@ -233,11 +273,10 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
             return (
               <div
                 key={wallet.id}
-                className={`border-2 rounded-xl p-4 transition-all ${
-                  isInstalled
+                className={`border-2 rounded-xl p-4 transition-all ${isInstalled
                     ? 'border-primary/20 bg-primary/5 hover:border-primary/40'
                     : 'border-border bg-muted/50 opacity-60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -282,6 +321,40 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
           </div>
         </div>
       )}
+
+      {/* Testnet network picker — shown when wallet address is addr_test1... */}
+      <Dialog open={showTestnetPicker} onOpenChange={() => { }}>
+        <DialogContent
+          className="sm:max-w-sm"
+          // Prevent closing by clicking outside — user must make an explicit choice
+          onPointerDownOutside={e => e.preventDefault()}
+          onEscapeKeyDown={e => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Select Testnet</DialogTitle>
+            <DialogDescription>
+              Your wallet is on a Cardano testnet (<code className="text-xs">addr_test1…</code>).
+              Both <strong>Preprod</strong> and <strong>Preview</strong> share the same address
+              format, so please choose which network you are connected to.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 mt-2">
+            <Button
+              className="flex-1"
+              onClick={() => handleTestnetChoice('preprod')}
+            >
+              Preprod
+            </Button>
+            <Button
+              className="flex-1"
+              variant="outline"
+              onClick={() => handleTestnetChoice('preview')}
+            >
+              Preview
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

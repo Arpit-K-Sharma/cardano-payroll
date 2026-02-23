@@ -1,6 +1,6 @@
 import { KuberApiProvider } from "kuber-client";
 import * as CSL from "@emurgo/cardano-serialization-lib-asmjs";
-import config from "./config";
+import config, { getKuberApiUrl } from "./config";
 import { toast } from "sonner";
 
 // Helper to convert CIP-30 UTXOs to Kuber format
@@ -19,7 +19,6 @@ function convertCip30UtxosToKuber(utxos: string[]) {
 
 export async function sendBatchAda(payments: { address: string, amount: number }[]) {
     // Log all payment addresses in full (no truncation)
-    const kuber = new KuberApiProvider(config.kuberApiUrl , config.kuberApiKey || '');
     // Retrieve wallet info from session storage
     const session = sessionStorage.getItem('walletSession');
     if (!session) {
@@ -27,7 +26,11 @@ export async function sendBatchAda(payments: { address: string, amount: number }
         return;
     }
     const { walletName: walletId, address: walletAddress } = JSON.parse(session);
-    // Log wallet session with full address
+
+    // Derive Kuber API URL from the connected wallet address (mainnet vs testnet)
+    const kuberApiUrl = getKuberApiUrl(walletAddress);
+    console.info(`Using Kuber API URL: ${kuberApiUrl} (derived from address: ${walletAddress})`);
+    const kuber = new KuberApiProvider(kuberApiUrl, config.kuberApiKey || '');
 
     // Get the wallet API from window.cardano
     if (!window.cardano) {
@@ -99,9 +102,9 @@ export async function sendBatchAda(payments: { address: string, amount: number }
 
         // Submit the signed transaction
         await fetch(config.apiBaseUrl + "/api/run-wallet-payroll", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signedTxCbor }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ signedTxCbor }),
         });
 
     } catch (e) {
