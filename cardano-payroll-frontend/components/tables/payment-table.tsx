@@ -74,7 +74,9 @@ export function PaymentTable({ transactions }: PaymentTableProps) {
                   {transaction.employee?.fullName || "N/A"}
                 </td>
                 <td className="px-6 py-4 text-sm font-mono text-muted-foreground">
-                  {transaction.walletAddress ? `${transaction.walletAddress.slice(0, 20)}...` : "N/A"}
+                    {transaction.walletAddress
+                    ? `${transaction.walletAddress.slice(0, 6)}...${transaction.walletAddress.slice(-4)}`
+                    : "N/A"}
                 </td>
                 <td className="px-6 py-4 text-sm font-semibold text-foreground">
                   ₳{transaction.amount?.toFixed(2) || "0.00"}
