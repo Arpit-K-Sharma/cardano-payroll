@@ -113,7 +113,8 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
     setConnectedWallet(connectedInfo)
     setWalletAddress(address)
 
-    sessionStorage.setItem('walletSession', JSON.stringify({ id: walletId, address }))
+    // Use 'walletName' key — must match what kuber-client.ts reads
+    sessionStorage.setItem('walletSession', JSON.stringify({ walletName: walletId, address }))
 
     if (onConnect) {
       onConnect(walletId, address)
@@ -211,6 +212,7 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
     setWalletAddress(null)
     setError(null)
     sessionStorage.removeItem('walletSession')
+    sessionStorage.removeItem('cardanoTestnet')
     if (onDisconnect) {
       onDisconnect()
     }
@@ -241,9 +243,17 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
           </div>
 
           {walletAddress && (
-            <div className="w-full p-4 rounded-xl bg-muted">
-              <p className="text-xs text-muted-foreground mb-1">Address</p>
+            <div className="w-full p-4 rounded-xl bg-muted space-y-1">
+              <p className="text-xs text-muted-foreground">Address</p>
               <p className="font-mono text-sm text-foreground break-all">{formatAddress(walletAddress)}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Network:{' '}
+                <span className="font-semibold text-foreground">
+                  {walletAddress.startsWith('addr1')
+                    ? 'Mainnet'
+                    : (sessionStorage.getItem('cardanoTestnet') ?? 'Testnet (unknown)')}
+                </span>
+              </p>
             </div>
           )}
 
@@ -274,8 +284,8 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps = 
               <div
                 key={wallet.id}
                 className={`border-2 rounded-xl p-4 transition-all ${isInstalled
-                    ? 'border-primary/20 bg-primary/5 hover:border-primary/40'
-                    : 'border-border bg-muted/50 opacity-60'
+                  ? 'border-primary/20 bg-primary/5 hover:border-primary/40'
+                  : 'border-border bg-muted/50 opacity-60'
                   }`}
               >
                 <div className="flex items-center justify-between">
